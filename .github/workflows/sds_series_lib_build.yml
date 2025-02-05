@@ -32,6 +32,28 @@ jobs:
       - name: Install exact pnpm version
         run: npm install -g pnpm@$PNPM_VERSION
 
+      - name: Override Vite Config by Extending Original
+        run: |
+          cd sds_series_lib_external
+          mv vite.config.ts vite.config_original.ts  # Rename their original config
+
+          cat <<EOT > vite.config.ts
+          import { defineConfig } from 'vitest/config';
+          import originalConfig from './vite.config_original';
+
+          export default defineConfig({
+            ...originalConfig,
+            build: {
+              ...originalConfig.build,
+              minify: true,
+              rollupOptions: {
+                ...originalConfig.build.rollupOptions,
+                external: [], // Force all dependencies to be bundled
+              },
+            },
+          });
+          EOT
+
       - name: Install dependencies
         run: |
           cd sds_series_lib_external
