@@ -41,16 +41,20 @@ jobs:
           import { defineConfig } from 'vitest/config';
           import originalConfig from './vite.config_original';
 
-          export default defineConfig({
-            ...originalConfig,
-            build: {
-              ...originalConfig.build,
-              minify: true,
-              rollupOptions: {
-                ...originalConfig.build.rollupOptions,
-                external: [], // Force all dependencies to be bundled
+          export default defineConfig((env) => {
+            const baseConfig = typeof originalConfig === 'function' ? originalConfig(env) : originalConfig;
+          
+            return {
+              ...baseConfig,
+              build: {
+                ...baseConfig.build,
+                minify: true,
+                rollupOptions: {
+                  ...baseConfig.build?.rollupOptions,
+                  external: [], // Make that external libs are included
+                },
               },
-            },
+            };
           });
           EOT
 
