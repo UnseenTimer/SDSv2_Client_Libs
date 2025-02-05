@@ -1,0 +1,52 @@
+name: Build External Repo and Publish
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+
+      - name: Clone external repo
+        run: git clone --depth=1 https://github.com/sussy-code/providers.git external
+
+      - name: Read pnpm version from package.json
+        id: get-pnpm-version
+        run: |
+          cd external
+          PNPM_VERSION=$(jq -r '.packageManager' package.json | cut -d'@' -f2)
+          echo "pnpm version found: $PNPM_VERSION"
+          echo "PNPM_VERSION=$PNPM_VERSION" >> $GITHUB_ENV
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install exact pnpm version
+        run: npm install -g pnpm@$PNPM_VERSION
+
+      - name: Install dependencies
+        run: |
+          cd external
+          pnpm install
+
+      - name: Copy build output
+        run: |
+          mkdir -p built-output
+          cp -r external/lib/* built-output/  # Adjust for correct output folder
+
+      - name: Commit and push built output
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add built-output/index.js
+          git commit -m "Automated build update $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push -f origin series-build
