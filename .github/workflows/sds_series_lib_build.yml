@@ -109,8 +109,7 @@ jobs:
           echo $CURRENT_COMMIT_HASH > sds_series_lib/last_commit_hash.txt
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan series-lib-build
           git add sds_series_lib
           git commit -m "Automated build update $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push -f origin series-lib-build
+          git push
         if: env.skip_build == 'false'
