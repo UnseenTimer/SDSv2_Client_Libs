@@ -1,4 +1,4 @@
-name: Build External Repo and Publish
+name: SDS Series Lib Build
 
 on:
   schedule:
