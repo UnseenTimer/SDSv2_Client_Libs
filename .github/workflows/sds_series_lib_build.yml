@@ -16,6 +16,35 @@ jobs:
       - name: Clone external repo
         run: git clone --depth=1 https://github.com/sussy-code/providers.git sds_series_lib_external
 
+      - name: Read last commit hash
+        id: get_last_commit_hash
+        run: |
+          if [ -f "sds_series_lib/last_commit_hash.txt" ]; then
+            LAST_COMMIT_HASH=$(cat sds_series_lib/last_commit_hash.txt)
+            echo "Last commit hash: $LAST_COMMIT_HASH"
+          else
+            echo "No previous commit hash found. Building from scratch."
+          fi
+          echo "LAST_COMMIT_HASH=$LAST_COMMIT_HASH" >> $GITHUB_ENV
+
+      - name: Fetch current commit hash of external lib
+        id: get_current_commit_hash
+        run: |
+          cd external
+          CURRENT_COMMIT_HASH=$(git rev-parse HEAD)
+          echo "Current commit hash: $CURRENT_COMMIT_HASH"
+          echo "CURRENT_COMMIT_HASH=$CURRENT_COMMIT_HASH" >> $GITHUB_ENV
+
+      - name: Compare commit hashes
+        id: compare_commit_hashes
+        run: |
+          if [ "$LAST_COMMIT_HASH" == "$CURRENT_COMMIT_HASH" ]; then
+            echo "No change detected. Skipping build."
+            echo "skip_build=true" >> $GITHUB_ENV
+          else
+            echo "Changes detected. Proceeding with build."
+            echo "skip_build=false" >> $GITHUB_ENV
+
       - name: Read pnpm version from package.json
         id: get-pnpm-version
         run: |
@@ -23,14 +52,17 @@ jobs:
           PNPM_VERSION=$(jq -r '.packageManager' package.json | cut -d'@' -f2)
           echo "pnpm version found: $PNPM_VERSION"
           echo "PNPM_VERSION=$PNPM_VERSION" >> $GITHUB_ENV
+        if: env.skip_build == 'false'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+        if: env.skip_build == 'false'
 
       - name: Install exact pnpm version
         run: npm install -g pnpm@$PNPM_VERSION
+        if: env.skip_build == 'false'
 
       - name: Override Vite Config by Extending Original
         run: |
@@ -57,22 +89,27 @@ jobs:
             };
           });
           EOT
+        if: env.skip_build == 'false'
 
       - name: Install dependencies
         run: |
           cd sds_series_lib_external
           pnpm install
+        if: env.skip_build == 'false'
 
       - name: Copy build output
         run: |
           mkdir -p sds_series_lib
           cp -r sds_series_lib_external/lib/* sds_series_lib/  # Adjust for correct output folder
+        if: env.skip_build == 'false'
 
       - name: Commit and push built output
         run: |
+          echo $CURRENT_COMMIT_HASH > sds_series_lib/last_commit_hash.txt
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan series-lib-build
-          git add sds_series_lib/index.js
+          git add sds_series_lib
           git commit -m "Automated build update $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
           git push -f origin series-lib-build
+        if: env.skip_build == 'false'
