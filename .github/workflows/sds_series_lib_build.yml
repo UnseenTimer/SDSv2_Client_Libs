@@ -47,6 +47,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan series-lib-build
-          git add sds_series_lib_external/index.js
+          git add sds_series_lib/index.js
           git commit -m "Automated build update $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
           git push -f origin series-lib-build
