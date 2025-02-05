@@ -30,7 +30,7 @@ jobs:
       - name: Fetch current commit hash of external lib
         id: get_current_commit_hash
         run: |
-          cd external
+          cd sds_series_lib_external
           CURRENT_COMMIT_HASH=$(git rev-parse HEAD)
           echo "Current commit hash: $CURRENT_COMMIT_HASH"
           echo "CURRENT_COMMIT_HASH=$CURRENT_COMMIT_HASH" >> $GITHUB_ENV
