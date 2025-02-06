@@ -86,6 +86,10 @@ jobs:
                   ...baseConfig.build?.rollupOptions,
                   external: [], // Make that external libs are included
                 },
+                lib: {
+                  ...baseConfig.build?.lib,
+                  formats: ['cjs'],
+                }
               },
             };
           });
