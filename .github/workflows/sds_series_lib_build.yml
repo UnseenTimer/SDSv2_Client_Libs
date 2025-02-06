@@ -71,6 +71,10 @@ jobs:
           mv vite.config.ts vite.config_original.ts  # Rename their original config
 
           cat <<EOT > vite.config.ts
+          // @ts-nocheck
+          // Skip type checking since we assume the lib is correct.
+          // Below breaks on ts for the lib part since it expects props there that it cant
+          // determine from the spreading
           import { defineConfig } from 'vitest/config';
           import originalConfig from './vite.config_original';
 
