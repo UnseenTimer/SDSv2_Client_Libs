@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clone external repo
-        run: git clone --depth=1 https://github.com/sussy-code/providers.git sds_series_lib_external_test
+        run: git clone --depth=1 https://github.com/p-stream/providers.git sds_series_lib_external_test
 
       - name: Read last commit hash
         id: get_last_commit_hash
