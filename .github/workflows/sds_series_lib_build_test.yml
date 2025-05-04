@@ -1,4 +1,4 @@
-name: SDS Series Lib Build
+name: SDS Series Lib Build Test
 
 on:
   workflow_dispatch:  # Allows manual trigger
