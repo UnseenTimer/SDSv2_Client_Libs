@@ -6,6 +6,7 @@ declare type Caption = {
     type: CaptionType;
     id: string;
     opensubtitles?: boolean;
+    wyziesubs?: boolean;
     url: string;
     hasCorsRestrictions: boolean;
     language: string;
@@ -111,6 +112,7 @@ declare type FetchOps = {
     method: string;
     body: any;
     credentials?: 'include' | 'same-origin' | 'omit';
+    signal?: any;
 };
 
 declare type FetchReply = {
