@@ -70,6 +70,7 @@ jobs:
           cd aniwatch_external
           cat <<EOT > tsup.electron.config.ts
           import { defineConfig } from "tsup";
+          import { dependencies } from "./package.json";
 
           export default defineConfig({
               format: ["cjs"],
@@ -85,7 +86,7 @@ jobs:
               outDir: "dist-electron",
               target: "node20",
               platform: "node",
-              noExternal: true,
+              noExternal: Object.keys(dependencies || {}),
           });
           EOT
         if: env.skip_build == 'false'
