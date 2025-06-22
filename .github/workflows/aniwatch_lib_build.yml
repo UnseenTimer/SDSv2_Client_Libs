@@ -29,6 +29,8 @@ jobs:
 
       - name: Get latest v2 tag
         id: get_latest_v2_tag
+        # NOTE: In the below git fetch --tags will dump all tag but will be missing the latest v2 tag because of the
+        # depth=1 option.
         run: |
           cd aniwatch_external
           git fetch --tags
@@ -83,7 +85,7 @@ jobs:
               outDir: "dist-electron",
               target: "node20",
               platform: "node",
-              external: [],
+              noExternal: [/.*/],
           });
           EOT
         if: env.skip_build == 'false'
