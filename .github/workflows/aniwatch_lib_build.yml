@@ -83,6 +83,7 @@ jobs:
               outDir: "dist-electron",
               target: "node20",
               platform: "node",
+              external: [],
           });
           EOT
         if: env.skip_build == 'false'
