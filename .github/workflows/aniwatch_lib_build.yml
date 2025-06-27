@@ -103,7 +103,7 @@ jobs:
       - name: Build for Electron
         run: |
           cd aniwatch_external
-          yarn tsup --config tsup.electron.config.ts
+          NODE_ENV=production yarn tsup --config tsup.electron.config.ts
         if: env.skip_build == 'false'
 
       - name: Copy build output
