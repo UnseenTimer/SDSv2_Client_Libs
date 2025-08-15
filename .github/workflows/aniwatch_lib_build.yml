@@ -1,0 +1,124 @@
+name: Aniwatch Lib Build
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+
+      - name: Clone external repo
+        run: git clone --depth=1 https://github.com/ghoshRitesh12/aniwatch.git aniwatch_external
+
+      - name: Read last build version
+        id: get_last_build_version
+        run: |
+          if [ -f "aniwatch/last_build_version.txt" ]; then
+            RAW_LAST_BUILD_VERSION=$(cat aniwatch/last_build_version.txt)
+            LAST_BUILD_VERSION=$(echo "$RAW_LAST_BUILD_VERSION" | awk -F'SDS_v' '{print $1}' | xargs)
+            echo "Last build version (parsed): $LAST_BUILD_VERSION"
+          else
+            echo "No previous build version found. Building from scratch."
+          fi
+          echo "LAST_BUILD_VERSION=$LAST_BUILD_VERSION" >> $GITHUB_ENV
+
+      - name: Get latest v2 tag
+        id: get_latest_v2_tag
+        # NOTE: In the below git fetch --tags will dump all tag but will be missing the latest v2 tag because of the
+        # depth=1 option.
+        run: |
+          cd aniwatch_external
+          git fetch --tags
+          LATEST_V2_TAG=$(git tag -l "v2.*" | sort -V | tail -n1)
+          echo "Latest v2 tag: $LATEST_V2_TAG"
+          echo "LATEST_V2_TAG=$LATEST_V2_TAG" >> $GITHUB_ENV
+
+      - name: Compare versions
+        id: compare_versions
+        run: |
+          if [ "$LAST_BUILD_VERSION" == "$LATEST_V2_TAG" ]; then
+            echo "No new version detected. Skipping build."
+            echo "skip_build=true" >> $GITHUB_ENV
+          else
+            echo "New version detected. Proceeding with build."
+            echo "skip_build=false" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout latest v2 tag
+        run: |
+          cd aniwatch_external
+          git checkout $LATEST_V2_TAG
+        if: env.skip_build == 'false'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+        if: env.skip_build == 'false'
+
+      - name: Install yarn
+        run: npm install -g yarn
+        if: env.skip_build == 'false'
+
+      - name: Create custom tsup config for Electron
+        run: |
+          cd aniwatch_external
+          cat <<EOT > tsup.electron.config.ts
+          import { defineConfig } from "tsup";
+          import baseConfig from "./tsup.config";
+
+          export default defineConfig({
+            ...baseConfig,
+            format: ['cjs'],
+            splitting: false,
+            skipNodeModulesBundle: false,
+            // Produces a single file
+            bundle: true,
+            outDir: 'dist-electron',
+            target: 'node20',
+            platform: 'node',
+            //NOTE: replaceNodeEnv only takes affect if minify is true
+            // Without that it will break since some script things will try and run development things
+            // that might not be available.
+            minify: true,
+            replaceNodeEnv: true,
+            // Includes all libs in the bundle
+            noExternal: [/.*/],
+          });
+
+          EOT
+        if: env.skip_build == 'false'
+
+      - name: Install dependencies
+        run: |
+          cd aniwatch_external
+          yarn install
+        if: env.skip_build == 'false'
+
+      - name: Build for Electron
+        run: |
+          cd aniwatch_external
+          NODE_ENV=production yarn tsup --config tsup.electron.config.ts
+        if: env.skip_build == 'false'
+
+      - name: Copy build output
+        run: |
+          mkdir -p aniwatch
+          cp -r aniwatch_external/dist-electron/* aniwatch/
+        if: env.skip_build == 'false'
+
+      - name: Commit and push built output
+        run: |
+          echo $LATEST_V2_TAG > aniwatch/last_build_version.txt
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add aniwatch
+          git commit -m "Automated aniwatch build update to $LATEST_V2_TAG $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push
+        if: env.skip_build == 'false'
