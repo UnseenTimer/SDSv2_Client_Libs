@@ -21,6 +21,7 @@ jobs:
         run: |
           if [ -f "aniwatch/last_build_version.txt" ]; then
             RAW_LAST_BUILD_VERSION=$(cat aniwatch/last_build_version.txt)
+            echo "RAW_LAST_BUILD_VERSION: $RAW_LAST_BUILD_VERSION"
             LAST_BUILD_VERSION=$(echo "$RAW_LAST_BUILD_VERSION" | awk -F'SDS_v' '{print $1}' | xargs)
             echo "Last build version (parsed): $LAST_BUILD_VERSION"
           else
